@@ -89,6 +89,9 @@ patch(ComboConfiguratorPopup.prototype, {
                 }
                 this.state.childCombos[combo.id] = [];
                 this.state.combo[combo.id] = [];
+                // `selected` is a local copy of the prior selection. Clear it too
+                // before storing the replacement below.
+                selected.length = 0;
             }
             selected.push(value);
         }
