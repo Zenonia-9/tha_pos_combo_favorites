@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pos_combo_form_nested" model="ir.ui.view">
+        <field name="name">pos.combo.form.nested.choices</field>
+        <field name="model">pos.combo</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_combo_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='combo_line_ids']" position="before">
+                <group>
+                    <field name="tha_parent_combo_id"/>
+                    <field name="tha_max_selection"/>
+                </group>
+            </xpath>
+            <xpath expr="//field[@name='combo_line_ids']" position="attributes">
+                <attribute name="invisible">tha_child_combo_ids</attribute>
+            </xpath>
+            <xpath expr="//field[@name='combo_line_ids']" position="after">
+                <field name="tha_child_combo_ids" context="{'default_tha_parent_combo_id': id}">
+                    <tree editable="bottom">
+                        <field name="name"/>
+                        <field name="tha_max_selection"/>
+                    </tree>
+                </field>
+            </xpath>
+        </field>
+    </record>
+</odoo>

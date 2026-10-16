@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-inherit="point_of_sale.ComboConfiguratorPopup" t-inherit-mode="extension" owl="1">
+        <xpath expr="//main" position="replace">
+            <main class="body">
+                <t t-foreach="props.product.combo_ids" t-as="comboId" t-key="comboId">
+                    <t t-set="combo" t-value="pos.db.combo_by_id[comboId]"/>
+                    <t t-call="tha_pos_combo_set.ComboChoiceTree"/>
+                </t>
+            </main>
+        </xpath>
+    </t>
+    <t t-name="tha_pos_combo_set.ComboChoiceTree" owl="1">
+        <div class="d-flex flex-column m-3 mb-4">
+            <h3 class="me-auto mb-3" t-esc="combo.name"/>
+            <div t-if="getChildren(combo).length" class="product-list d-grid gap-1">
+                <t t-foreach="getChildren(combo)" t-as="child" t-key="child.id">
+                    <button type="button" class="btn btn-outline-secondary text-start"
+                        t-att-class="{'active': isSelected(combo.id, child.id, true)}"
+                        t-att-disabled="!isSelected(combo.id, child.id, true) &amp;&amp; (state.childCombos[combo.id] || []).length &gt;= (combo.tha_max_selection || 1)"
+                        t-on-click="() => toggleSelection(combo, child.id, true)">
+                        <span t-esc="child.name"/>
+                    </button>
+                </t>
+                <t t-foreach="state.childCombos[combo.id] || []" t-as="childId" t-key="childId">
+                    <t t-set="combo" t-value="pos.db.combo_by_id[childId]"/>
+                    <t t-call="tha_pos_combo_set.ComboChoiceTree"/>
+                </t>
+            </div>
+            <div t-else="" class="product-list d-grid gap-1">
+                <t t-foreach="getAvailableComboLines(combo)" t-as="combo_line" t-key="combo_line.id">
+                    <t t-set="product" t-value="pos.db.product_by_id[combo_line.product_id[0]]"/>
+                    <button type="button" class="btn btn-outline-secondary text-start"
+                        t-att-class="{'active': isSelected(combo.id, combo_line.id)}"
+                        t-att-disabled="!isSelected(combo.id, combo_line.id) &amp;&amp; (state.combo[combo.id] || []).length &gt;= (combo.tha_max_selection || 1)"
+                        t-on-click="() => onClickNestedProduct({product, combo, combo_line})">
+                        <span t-esc="product.display_name"/>
+                    </button>
+                </t>
+            </div>
+        </div>
+    </t>
+</templates>
