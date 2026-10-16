@@ -11,6 +11,16 @@ class PosCombo(models.Model):
     tha_child_combo_ids = fields.One2many(
         "pos.combo", "tha_parent_combo_id", string="Sub Choices"
     )
+    tha_choice_type = fields.Selection(
+        [
+            ("products", "Products"),
+            ("subchoices", "Sub Choices"),
+        ],
+        string="Choice Contents",
+        default="products",
+        required=True,
+        help="Choose whether this choice contains product options or nested combo choices.",
+    )
     tha_max_selection = fields.Integer(
         string="Maximum Selections",
         default=1,
@@ -18,12 +28,20 @@ class PosCombo(models.Model):
         help="Maximum number of products or sub choices the customer can select. At least one is required.",
     )
 
-    @api.constrains("combo_line_ids", "tha_child_combo_ids")
+    @api.constrains("tha_choice_type", "combo_line_ids", "tha_child_combo_ids")
     def _check_combo_line_ids_is_not_null(self):
         for combo in self:
-            if bool(combo.combo_line_ids) == bool(combo.tha_child_combo_ids):
+            if combo.combo_line_ids and combo.tha_child_combo_ids:
                 raise ValidationError(
                     _("A combo choice must contain either products or sub choices, but not both.")
+                )
+            if combo.tha_choice_type == "products" and combo.tha_child_combo_ids:
+                raise ValidationError(
+                    _("Change Choice Contents to Sub Choices before adding child choices.")
+                )
+            if combo.tha_choice_type == "subchoices" and combo.combo_line_ids:
+                raise ValidationError(
+                    _("Remove product lines before changing Choice Contents to Sub Choices.")
                 )
 
     @api.constrains("tha_max_selection")

@@ -18,7 +18,7 @@
                     <button type="button" class="btn btn-outline-secondary text-start"
                         t-att-class="{'active': isSelected(combo.id, child.id, true)}"
                         t-att-disabled="!isSelected(combo.id, child.id, true) &amp;&amp; (state.childCombos[combo.id] || []).length &gt;= (combo.tha_max_selection || 1)"
-                        t-on-click="() => toggleSelection(combo, child.id, true)">
+                        t-on-click="() => this.toggleSelection(combo, child.id, true)">
                         <span t-esc="child.name"/>
                     </button>
                 </t>
@@ -33,7 +33,7 @@
                     <button type="button" class="btn btn-outline-secondary text-start"
                         t-att-class="{'active': isSelected(combo.id, combo_line.id)}"
                         t-att-disabled="!isSelected(combo.id, combo_line.id) &amp;&amp; (state.combo[combo.id] || []).length &gt;= (combo.tha_max_selection || 1)"
-                        t-on-click="() => onClickNestedProduct({product, combo, combo_line})">
+                        t-on-click="(ev) => this.onClickNestedProduct({product, combo, combo_line}, ev)">
                         <span t-esc="product.display_name"/>
                     </button>
                 </t>
