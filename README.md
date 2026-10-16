@@ -19,4 +19,4 @@ Odoo 17 addon extending Point of Sale combo choices with nested sub choices and 
 
 Products and nested groups can coexist. Sub Choices only selects existing groups; it does not create groups. Removing a parent relationship does not delete its nested groups.
 
-On upgrade to 17.0.1.0.3, existing nested relationships are migrated and retained.
+Nested choices open in their own configurator popup. A maximum of one behaves like a radio selection: choosing a different option replaces the previous one. On upgrade to 17.0.1.0.3, existing nested relationships are migrated and retained.

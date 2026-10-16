@@ -5,6 +5,7 @@ import { PosStore } from "@point_of_sale/app/store/pos_store";
 import { ComboConfiguratorPopup } from "@point_of_sale/app/store/combo_configurator_popup/combo_configurator_popup";
 import { useState } from "@odoo/owl";
 import { usePos } from "@point_of_sale/app/store/pos_hook";
+import { useService } from "@web/core/utils/hooks";
 
 patch(PosStore.prototype, {
     async _processData(loadedData) {
@@ -30,9 +31,11 @@ patch(ComboConfiguratorPopup.prototype, {
     setup() {
         super.setup(...arguments);
         this.pos = usePos();
+        this.popup = useService("popup");
         this.state = useState({
             combo: {},
             childCombos: {},
+            nestedPayload: {},
             configuration: {},
         });
     },
@@ -54,15 +57,21 @@ patch(ComboConfiguratorPopup.prototype, {
         if (this.isSelected(combo.id, value, isChild)) {
             return true;
         }
+        const maxSelection = combo.tha_max_selection || 1;
         const count = (this.state.combo[combo.id] || []).length
             + (this.state.childCombos[combo.id] || []).length;
-        return count < (combo.tha_max_selection || 1);
+        // A single-select choice behaves like native radio buttons: selecting a
+        // different option replaces the previous selection.
+        return maxSelection === 1 || count < maxSelection;
     },
     toggleSelection(combo, value, isChild) {
         const key = isChild ? "childCombos" : "combo";
         const selected = [...(this.state[key][combo.id] || [])];
         const index = selected.indexOf(value);
         if (index >= 0) {
+            if ((combo.tha_max_selection || 1) === 1) {
+                return;
+            }
             selected.splice(index, 1);
             if (isChild) {
                 this.clearSubtree(value);
@@ -70,9 +79,38 @@ patch(ComboConfiguratorPopup.prototype, {
                 delete this.state.configuration[value];
             }
         } else if (this.canSelect(combo, value, isChild)) {
+            if ((combo.tha_max_selection || 1) === 1) {
+                for (const childId of this.state.childCombos[combo.id] || []) {
+                    this.clearSubtree(childId);
+                    delete this.state.nestedPayload[combo.id]?.[childId];
+                }
+                for (const lineId of this.state.combo[combo.id] || []) {
+                    delete this.state.configuration[lineId];
+                }
+                this.state.childCombos[combo.id] = [];
+                this.state.combo[combo.id] = [];
+            }
             selected.push(value);
         }
         this.state[key][combo.id] = selected;
+    },
+    async onClickNestedCombo(combo, child) {
+        if (this.isSelected(combo.id, child.id, true)) {
+            if ((combo.tha_max_selection || 1) > 1) {
+                this.toggleSelection(combo, child.id, true);
+                delete this.state.nestedPayload[combo.id]?.[child.id];
+            }
+            return;
+        }
+        const { confirmed, payload } = await this.popup.add(ComboConfiguratorPopup, {
+            product: { display_name: child.name, combo_ids: [child.id] },
+        });
+        if (!confirmed) {
+            return;
+        }
+        this.toggleSelection(combo, child.id, true);
+        this.state.nestedPayload[combo.id] ||= {};
+        this.state.nestedPayload[combo.id][child.id] = payload;
     },
     clearSubtree(comboId) {
         const combo = this.pos.db.combo_by_id[comboId];
@@ -84,8 +122,10 @@ patch(ComboConfiguratorPopup.prototype, {
         }
         delete this.state.combo[comboId];
         delete this.state.childCombos[comboId];
+        delete this.state.nestedPayload[comboId];
     },
     async onClickNestedProduct({ product, combo, combo_line }) {
+        const wasSelected = this.isSelected(combo.id, combo_line.id);
         if (product.isConfigurable()) {
             const { confirmed, payload } = await product.openConfigurator({ initQuantity: 1 });
             if (!confirmed) {
@@ -93,7 +133,9 @@ patch(ComboConfiguratorPopup.prototype, {
             }
             this.state.configuration[combo_line.id] = payload;
         }
-        this.toggleSelection(combo, combo_line.id, false);
+        if (!wasSelected) {
+            this.toggleSelection(combo, combo_line.id, false);
+        }
     },
     areAllCombosSelected() {
         const isComplete = (combo) => {
@@ -112,7 +154,7 @@ patch(ComboConfiguratorPopup.prototype, {
         const selectedLines = [];
         const visit = (combo) => {
             for (const childId of this.state.childCombos[combo.id] || []) {
-                visit(this.pos.db.combo_by_id[childId]);
+                selectedLines.push(...(this.state.nestedPayload[combo.id]?.[childId] || []));
             }
             for (const id of this.state.combo[combo.id] || []) {
                 const combo_line = this.pos.db.combo_line_by_id[id];
