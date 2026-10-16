@@ -50,6 +50,14 @@ patch(ComboConfiguratorPopup.prototype, {
         const selected = isChild ? this.state.childCombos : this.state.combo;
         return (selected[comboId] || []).includes(value);
     },
+    canSelect(combo, value, isChild = false) {
+        if (this.isSelected(combo.id, value, isChild)) {
+            return true;
+        }
+        const count = (this.state.combo[combo.id] || []).length
+            + (this.state.childCombos[combo.id] || []).length;
+        return count < (combo.tha_max_selection || 1);
+    },
     toggleSelection(combo, value, isChild) {
         const key = isChild ? "childCombos" : "combo";
         const selected = [...(this.state[key][combo.id] || [])];
@@ -61,7 +69,7 @@ patch(ComboConfiguratorPopup.prototype, {
             } else {
                 delete this.state.configuration[value];
             }
-        } else if (selected.length < (combo.tha_max_selection || 1)) {
+        } else if (this.canSelect(combo, value, isChild)) {
             selected.push(value);
         }
         this.state[key][combo.id] = selected;
@@ -90,27 +98,21 @@ patch(ComboConfiguratorPopup.prototype, {
     areAllCombosSelected() {
         const isComplete = (combo) => {
             const children = this.getChildren(combo);
-            const selected = children.length
-                ? this.state.childCombos[combo.id] || []
-                : this.state.combo[combo.id] || [];
-            if (!selected.length || selected.length > (combo.tha_max_selection || 1)) {
+            const selectedChildren = this.state.childCombos[combo.id] || [];
+            const selectedProducts = this.state.combo[combo.id] || [];
+            const selectionCount = selectedChildren.length + selectedProducts.length;
+            if (!selectionCount || selectionCount > (combo.tha_max_selection || 1)) {
                 return false;
             }
-            return children.length
-                ? selected.every((id) => isComplete(this.pos.db.combo_by_id[id]))
-                : true;
+            return selectedChildren.every((id) => isComplete(this.pos.db.combo_by_id[id]));
         };
         return this.props.product.combo_ids.every((id) => isComplete(this.pos.db.combo_by_id[id]));
     },
     getPayload() {
         const selectedLines = [];
         const visit = (combo) => {
-            const children = this.getChildren(combo);
-            if (children.length) {
-                for (const id of this.state.childCombos[combo.id] || []) {
-                    visit(this.pos.db.combo_by_id[id]);
-                }
-                return;
+            for (const childId of this.state.childCombos[combo.id] || []) {
+                visit(this.pos.db.combo_by_id[childId]);
             }
             for (const id of this.state.combo[combo.id] || []) {
                 const combo_line = this.pos.db.combo_line_by_id[id];

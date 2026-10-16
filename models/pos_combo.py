@@ -6,20 +6,19 @@ class PosCombo(models.Model):
     _inherit = "pos.combo"
 
     tha_parent_combo_id = fields.Many2one(
-        "pos.combo", string="Parent Choice", ondelete="cascade", index=True
-    )
-    tha_child_combo_ids = fields.One2many(
-        "pos.combo", "tha_parent_combo_id", string="Sub Choices"
+        "pos.combo", string="Legacy Parent Choice", ondelete="set null", index=True
     )
     tha_choice_type = fields.Selection(
-        [
-            ("products", "Products"),
-            ("subchoices", "Sub Choices"),
-        ],
-        string="Choice Contents",
-        default="products",
-        required=True,
-        help="Choose whether this choice contains product options or nested combo choices.",
+        [("products", "Products"), ("subchoices", "Sub Choices")],
+        string="Legacy Choice Contents", default="products", required=True,
+    )
+    tha_child_combo_ids = fields.Many2many(
+        "pos.combo", "pos_combo_choice_rel", "parent_id", "child_id",
+        string="Sub Choices",
+    )
+    tha_parent_combo_ids = fields.Many2many(
+        "pos.combo", "pos_combo_choice_rel", "child_id", "parent_id",
+        string="Parent Choices",
     )
     tha_max_selection = fields.Integer(
         string="Maximum Selections",
@@ -28,46 +27,28 @@ class PosCombo(models.Model):
         help="Maximum number of products or sub choices the customer can select. At least one is required.",
     )
 
-    @api.constrains("tha_choice_type", "combo_line_ids", "tha_child_combo_ids")
+    @api.constrains("combo_line_ids", "tha_child_combo_ids")
     def _check_combo_line_ids_is_not_null(self):
-        for combo in self:
-            if combo.combo_line_ids and combo.tha_child_combo_ids:
-                raise ValidationError(
-                    _("A combo choice must contain either products or sub choices, but not both.")
-                )
-            if combo.tha_choice_type == "products" and combo.tha_child_combo_ids:
-                raise ValidationError(
-                    _("Change Choice Contents to Sub Choices before adding child choices.")
-                )
-            if combo.tha_choice_type == "subchoices" and combo.combo_line_ids:
-                raise ValidationError(
-                    _("Remove product lines before changing Choice Contents to Sub Choices.")
-                )
+        # Override the native non-empty check: a parent may offer direct products,
+        # child combo choices, or both.
+        return
 
     @api.constrains("tha_max_selection")
     def _check_tha_max_selection(self):
         if any(combo.tha_max_selection < 1 for combo in self):
             raise ValidationError(_("Maximum Selections must be at least one."))
 
-    @api.constrains("tha_parent_combo_id")
+    @api.constrains("tha_child_combo_ids")
     def _check_tha_combo_hierarchy(self):
         for combo in self:
-            ancestor = combo.tha_parent_combo_id
-            seen = {combo.id}
-            while ancestor:
-                if ancestor.id in seen:
+            seen = set()
+            stack = list(combo.tha_child_combo_ids)
+            while stack:
+                child = stack.pop()
+                if child == combo:
                     raise ValidationError(_("A combo choice cannot contain itself."))
-                seen.add(ancestor.id)
-                ancestor = ancestor.tha_parent_combo_id
-
-
-class PosComboLine(models.Model):
-    _inherit = "pos.combo.line"
-
-    @api.constrains("combo_id")
-    def _check_tha_combo_line_is_leaf(self):
-        for line in self:
-            if line.combo_id.tha_child_combo_ids:
-                raise ValidationError(
-                    _("A combo choice cannot contain products and sub choices at the same time.")
-                )
+                if child.id not in seen:
+                    seen.add(child.id)
+                    stack.extend(child.tha_child_combo_ids)
+                if len(child.tha_parent_combo_ids) > 1:
+                    raise ValidationError(_("A sub choice can only belong to one parent choice."))

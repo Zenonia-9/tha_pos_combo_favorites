@@ -7,23 +7,12 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='combo_line_ids']" position="before">
                 <group>
-                    <field name="tha_parent_combo_id" domain="[('tha_choice_type', '=', 'subchoices')]"/>
-                    <field name="tha_choice_type" widget="radio" options="{'horizontal': true}"/>
+                    <field name="tha_child_combo_ids" widget="many2many_tags"
+                        domain="[('id', '!=', id)]"
+                        options="{'no_create': True, 'no_create_edit': True}"
+                        help="Select existing combo choices. A choice can contain both products and sub choices."/>
                     <field name="tha_max_selection"/>
                 </group>
-            </xpath>
-            <xpath expr="//field[@name='combo_line_ids']" position="attributes">
-                <attribute name="invisible">tha_choice_type != 'products'</attribute>
-            </xpath>
-            <xpath expr="//field[@name='combo_line_ids']" position="after">
-                <field name="tha_child_combo_ids"
-                    invisible="tha_choice_type != 'subchoices'"
-                    context="{'default_tha_parent_combo_id': id}">
-                    <tree editable="bottom">
-                        <field name="name"/>
-                        <field name="tha_max_selection"/>
-                    </tree>
-                </field>
             </xpath>
         </field>
     </record>

@@ -17,7 +17,7 @@
                 <t t-foreach="getChildren(combo)" t-as="child" t-key="child.id">
                     <button type="button" class="btn btn-outline-secondary text-start"
                         t-att-class="{'active': isSelected(combo.id, child.id, true)}"
-                        t-att-disabled="!isSelected(combo.id, child.id, true) &amp;&amp; (state.childCombos[combo.id] || []).length &gt;= (combo.tha_max_selection || 1)"
+                        t-att-disabled="!canSelect(combo, child.id, true)"
                         t-on-click="() => this.toggleSelection(combo, child.id, true)">
                         <span t-esc="child.name"/>
                     </button>
@@ -27,12 +27,12 @@
                     <t t-call="tha_pos_combo_set.ComboChoiceTree"/>
                 </t>
             </div>
-            <div t-else="" class="product-list d-grid gap-1">
+            <div t-if="getAvailableComboLines(combo).length" class="product-list d-grid gap-1">
                 <t t-foreach="getAvailableComboLines(combo)" t-as="combo_line" t-key="combo_line.id">
                     <t t-set="product" t-value="pos.db.product_by_id[combo_line.product_id[0]]"/>
                     <button type="button" class="btn btn-outline-secondary text-start"
                         t-att-class="{'active': isSelected(combo.id, combo_line.id)}"
-                        t-att-disabled="!isSelected(combo.id, combo_line.id) &amp;&amp; (state.combo[combo.id] || []).length &gt;= (combo.tha_max_selection || 1)"
+                        t-att-disabled="!canSelect(combo, combo_line.id)"
                         t-on-click="(ev) => this.onClickNestedProduct({product, combo, combo_line}, ev)">
                         <span t-esc="product.display_name"/>
                     </button>

@@ -18,6 +18,6 @@ class PosSession(models.Model):
         params["ids"] = combo_ids
         params["search_params"]["fields"] = [
             "id", "name", "combo_line_ids", "base_price",
-            "tha_parent_combo_id", "tha_child_combo_ids", "tha_max_selection",
+            "tha_child_combo_ids", "tha_max_selection",
         ]
         return params

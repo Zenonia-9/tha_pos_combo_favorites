@@ -12,11 +12,11 @@ Odoo 17 addon extending Point of Sale combo choices with nested sub choices and 
 
 1. Install `tha_pos_combo_set` with `point_of_sale` installed.
 2. Open **Point of Sale → Products → Combo Choices**.
-3. Create a group, choose **Products** or **Sub Choices** under **Choice Contents**, and set **Maximum Selections**.
-4. For a product group, add products in the Products in Combo list.
-5. For a nested group, choose **Sub Choices** and add child choices. Open each child choice to select its parent and configure its own contents.
+3. Create a group, add product options in the Products in Combo list, and select any existing nested groups in **Sub Choices**.
+4. Set **Maximum Selections** to limit the combined number of direct products and nested groups the customer may choose from this group.
+5. Configure each selected nested group with its own products, nested groups, and selection limit.
 6. Assign top-level groups to the combo product as usual.
 
-A group should contain either product lines or sub choices, not both. Configure nested groups with a maximum of one when the customer must choose one category or item.
+Products and nested groups can coexist. Sub Choices only selects existing groups; it does not create groups. Removing a parent relationship does not delete its nested groups.
 
-On upgrade to 17.0.1.0.2, existing groups that already contain child choices are switched to **Sub Choices** automatically.
+On upgrade to 17.0.1.0.3, existing nested relationships are migrated and retained.
