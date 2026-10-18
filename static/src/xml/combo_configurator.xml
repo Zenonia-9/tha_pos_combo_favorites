@@ -5,12 +5,12 @@
             <main class="body">
                 <t t-foreach="props.product.combo_ids" t-as="comboId" t-key="comboId">
                     <t t-set="combo" t-value="pos.db.combo_by_id[comboId]"/>
-                    <t t-call="tha_pos_combo_set.ComboChoiceTree"/>
+                    <t t-call="tha_pos_combo_favorites.ComboChoiceTree"/>
                 </t>
             </main>
         </xpath>
     </t>
-    <t t-name="tha_pos_combo_set.ComboChoiceTree" owl="1">
+    <t t-name="tha_pos_combo_favorites.ComboChoiceTree" owl="1">
         <div class="d-flex flex-column m-3 mb-4">
             <h3 class="me-auto mb-3" t-esc="combo.name"/>
             <div t-if="getChildren(combo).length" class="product-list d-grid gap-1">

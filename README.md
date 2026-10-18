@@ -1,16 +1,17 @@
-# POS Nested Combo Sets
+# POS Combo Sets and Favorites
 
-Odoo 17 addon extending Point of Sale combo choices with nested sub choices and a selection limit per group.
+Odoo 17 addon extending Point of Sale with nested combo choices and a Favorites product category.
 
 ## Features
 
 - Nest combo choices to any depth, such as Drinks → Beer → available beer products.
 - Set the maximum number of selections allowed for each group; at least one selection is required.
 - Keep selected leaf products in Odoo's standard POS combo order-line flow.
+- Add a Star category beside Home that filters to products marked **Favorite** in the product catalog.
 
 ## Setup
 
-1. Install `tha_pos_combo_set` with `point_of_sale` installed.
+1. Install `tha_pos_combo_favorites` with `point_of_sale` installed.
 2. Open **Point of Sale → Products → Combo Choices**.
 3. Create a group, add product options in the Products in Combo list, and select any existing nested groups in **Sub Choices**.
 4. Set **Maximum Selections** to limit the combined number of direct products and nested groups the customer may choose from this group.
@@ -22,3 +23,5 @@ Products and nested groups can coexist. Sub Choices only selects existing groups
 Nested choices open in their own configurator popup. A maximum of one behaves like a radio selection: choosing a different option replaces the previous one. On upgrade to 17.0.1.0.3, existing nested relationships are migrated and retained.
 
 Confirming a nested popup completes that choice in the parent popup. The parent shows the category name separately from a labeled product badge, such as “Juices” and “Selected product: Lychee.” Click a selected category to choose again; canceling keeps the saved choice. Groups allowing multiple selections also provide a Remove button for selected categories.
+
+The technical addon directory and module ID are `tha_pos_combo_favorites`. Its display name is **POS Combo Sets and Favorites**.

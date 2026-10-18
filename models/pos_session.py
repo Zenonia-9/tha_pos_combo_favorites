@@ -21,3 +21,10 @@ class PosSession(models.Model):
             "tha_child_combo_ids", "tha_max_selection",
         ]
         return params
+
+    def _loader_params_product_product(self):
+        params = super()._loader_params_product_product()
+        product_fields = params["search_params"]["fields"]
+        if "tha_is_favorite" not in product_fields:
+            product_fields.append("tha_is_favorite")
+        return params
