@@ -14,14 +14,19 @@
         <div class="d-flex flex-column m-3 mb-4">
             <h3 class="me-auto mb-3" t-esc="combo.name"/>
             <div t-if="getChildren(combo).length" class="product-list d-grid gap-1">
-                <t t-foreach="getChildren(combo)" t-as="child" t-key="child.id">
-                    <button type="button" class="btn btn-outline-secondary text-start"
+                <div t-foreach="getChildren(combo)" t-as="child" t-key="child.id">
+                    <button type="button" class="btn btn-outline-secondary text-start w-100"
                         t-att-class="{'active': isSelected(combo.id, child.id, true)}"
                         t-att-disabled="!canSelect(combo, child.id, true)"
                         t-on-click="() => this.onClickNestedCombo(combo, child)">
                         <span t-esc="child.name"/>
+                        <small t-if="isSelected(combo.id, child.id, true)" class="d-block mt-1"
+                            t-esc="getNestedSelectionSummary(combo, child)"/>
                     </button>
-                </t>
+                    <button t-if="combo.tha_max_selection &gt; 1 &amp;&amp; isSelected(combo.id, child.id, true)"
+                        type="button" class="btn btn-link btn-sm"
+                        t-on-click="() => this.removeNestedCombo(combo, child)">Remove</button>
+                </div>
             </div>
             <div t-if="getAvailableComboLines(combo).length" class="product-list d-grid gap-1">
                 <t t-foreach="getAvailableComboLines(combo)" t-as="combo_line" t-key="combo_line.id">

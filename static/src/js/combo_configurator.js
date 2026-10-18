@@ -98,22 +98,28 @@ patch(ComboConfiguratorPopup.prototype, {
         this.state[key][combo.id] = selected;
     },
     async onClickNestedCombo(combo, child) {
-        if (this.isSelected(combo.id, child.id, true)) {
-            if ((combo.tha_max_selection || 1) > 1) {
-                this.toggleSelection(combo, child.id, true);
-                delete this.state.nestedPayload[combo.id]?.[child.id];
-            }
-            return;
-        }
+        const wasSelected = this.isSelected(combo.id, child.id, true);
         const { confirmed, payload } = await this.popup.add(ComboConfiguratorPopup, {
             product: { display_name: child.name, combo_ids: [child.id] },
         });
         if (!confirmed) {
             return;
         }
-        this.toggleSelection(combo, child.id, true);
+        if (!wasSelected) {
+            this.toggleSelection(combo, child.id, true);
+        }
         this.state.nestedPayload[combo.id] ||= {};
         this.state.nestedPayload[combo.id][child.id] = payload;
+    },
+    getNestedSelectionSummary(combo, child) {
+        return (this.state.nestedPayload[combo.id]?.[child.id] || [])
+            .map((line) => this.pos.db.product_by_id[line.product_id[0]]?.display_name
+                || line.product_id[1])
+            .join(", ");
+    },
+    removeNestedCombo(combo, child) {
+        this.toggleSelection(combo, child.id, true);
+        delete this.state.nestedPayload[combo.id]?.[child.id];
     },
     clearSubtree(comboId) {
         const combo = this.pos.db.combo_by_id[comboId];
@@ -142,14 +148,16 @@ patch(ComboConfiguratorPopup.prototype, {
     },
     areAllCombosSelected() {
         const isComplete = (combo) => {
-            const children = this.getChildren(combo);
             const selectedChildren = this.state.childCombos[combo.id] || [];
             const selectedProducts = this.state.combo[combo.id] || [];
             const selectionCount = selectedChildren.length + selectedProducts.length;
             if (!selectionCount || selectionCount > (combo.tha_max_selection || 1)) {
                 return false;
             }
-            return selectedChildren.every((id) => isComplete(this.pos.db.combo_by_id[id]));
+            // Each nested popup owns its selection state. Its confirmed payload,
+            // rather than this popup's local arrays, records completed choices.
+            return selectedChildren.every((id) =>
+                (this.state.nestedPayload[combo.id]?.[id] || []).length > 0);
         };
         return this.props.product.combo_ids.every((id) => isComplete(this.pos.db.combo_by_id[id]));
     },
