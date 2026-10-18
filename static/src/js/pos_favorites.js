@@ -12,17 +12,12 @@ patch(ProductsWidget.prototype, {
             name: "",
             icon: "fa-star fa-2x",
         };
-        if (this.pos.selectedCategoryId === FAVORITES_CATEGORY_ID) {
-            const categories = [
-                ...(this._thaRegularCategories || this._thaGetRootCategories()),
-            ];
-            const rootCategoryIndex = categories.findIndex(
-                (category) => category.id === this.pos.db.root_category_id
-            );
-            categories.splice(rootCategoryIndex + 1, 0, favoriteCategory);
-            return categories;
-        }
-        const categories = super.getCategories(...arguments);
+        const isFavoritesSelected =
+            this.pos.selectedCategoryId === FAVORITES_CATEGORY_ID;
+        const pathCategories = isFavoritesSelected ? [] : super.getCategories(...arguments);
+        const categories = isFavoritesSelected
+            ? [...(this._thaRegularCategories || this._thaGetAllCategories())]
+            : this._thaGetAllCategories(pathCategories);
         this._thaRegularCategories = categories.map((category) => ({ ...category }));
         const rootCategoryIndex = categories.findIndex(
             (category) => category.id === this.pos.db.root_category_id
@@ -31,22 +26,23 @@ patch(ProductsWidget.prototype, {
         return categories;
     },
 
-    _thaGetRootCategories() {
+    _thaGetAllCategories(pathCategories = []) {
         const { db } = this.pos;
         const rootCategoryId = db.root_category_id;
-        return [
-            ...db.get_category_ancestors_ids(rootCategoryId),
-            rootCategoryId,
-            ...db.get_category_childs_ids(rootCategoryId),
-        ].map((id) => {
-            const category = db.category_by_id[id];
+        const pathById = new Map(pathCategories.map((category) => [category.id, category]));
+        const allCategories = Object.values(db.category_by_id);
+        if (!allCategories.some((category) => category.id === rootCategoryId)) {
+            allCategories.unshift({ id: rootCategoryId, name: "Root" });
+        }
+        return allCategories.map((category) => {
             const isRootCategory = category.id === rootCategoryId;
+            const pathCategory = pathById.get(category.id);
             return {
                 id: category.id,
                 name: isRootCategory ? "" : category.name,
                 icon: isRootCategory ? "fa-home fa-2x" : "",
                 separator: "fa-caret-right",
-                showSeparator: false,
+                showSeparator: pathCategory?.showSeparator || false,
                 imageUrl:
                     category.has_image &&
                     `/web/image?model=pos.category&field=image_128&id=${category.id}&unique=${category.write_date}`,
