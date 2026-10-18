@@ -13,9 +13,14 @@ patch(ProductsWidget.prototype, {
             icon: "fa-star fa-2x",
         };
         if (this.pos.selectedCategoryId === FAVORITES_CATEGORY_ID) {
-            const categories =
-                this._thaRegularCategories || this._thaGetRootCategories();
-            return [...categories, favoriteCategory];
+            const categories = [
+                ...(this._thaRegularCategories || this._thaGetRootCategories()),
+            ];
+            const rootCategoryIndex = categories.findIndex(
+                (category) => category.id === this.pos.db.root_category_id
+            );
+            categories.splice(rootCategoryIndex + 1, 0, favoriteCategory);
+            return categories;
         }
         const categories = super.getCategories(...arguments);
         this._thaRegularCategories = categories.map((category) => ({ ...category }));
