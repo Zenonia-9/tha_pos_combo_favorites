@@ -21,4 +21,4 @@ Products and nested groups can coexist. Sub Choices only selects existing groups
 
 Nested choices open in their own configurator popup. A maximum of one behaves like a radio selection: choosing a different option replaces the previous one. On upgrade to 17.0.1.0.3, existing nested relationships are migrated and retained.
 
-Confirming a nested popup completes that choice in the parent popup. Selected categories display their chosen products, such as Soft Drinks with Coke underneath. Click a selected category to choose again; canceling keeps the saved choice. Groups allowing multiple selections also provide a Remove button for selected categories.
+Confirming a nested popup completes that choice in the parent popup. The parent shows the category name separately from a labeled product badge, such as “Juices” and “Selected product: Lychee.” Click a selected category to choose again; canceling keeps the saved choice. Groups allowing multiple selections also provide a Remove button for selected categories.

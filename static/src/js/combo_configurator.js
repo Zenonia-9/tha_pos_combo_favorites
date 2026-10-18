@@ -117,6 +117,10 @@ patch(ComboConfiguratorPopup.prototype, {
                 || line.product_id[1])
             .join(", ");
     },
+    getNestedSelectionLabel(combo, child) {
+        const count = (this.state.nestedPayload[combo.id]?.[child.id] || []).length;
+        return count === 1 ? "Selected product" : "Selected products";
+    },
     removeNestedCombo(combo, child) {
         this.toggleSelection(combo, child.id, true);
         delete this.state.nestedPayload[combo.id]?.[child.id];

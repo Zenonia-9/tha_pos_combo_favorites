@@ -1,6 +1,6 @@
 {
     "name": "POS Nested Combo Sets",
-    "version": "17.0.1.0.6",
+    "version": "17.0.1.0.7",
     "category": "Point of Sale",
     "summary": "Configure nested POS combo choices with selection limits",
     "description": "Create nested combo choice groups and control how many choices customers may select in each group.",

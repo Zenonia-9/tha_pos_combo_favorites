@@ -20,8 +20,12 @@
                         t-att-disabled="!canSelect(combo, child.id, true)"
                         t-on-click="() => this.onClickNestedCombo(combo, child)">
                         <span t-esc="child.name"/>
-                        <small t-if="isSelected(combo.id, child.id, true)" class="d-block mt-1"
-                            t-esc="getNestedSelectionSummary(combo, child)"/>
+                        <span t-if="isSelected(combo.id, child.id, true)"
+                            class="d-flex align-items-center gap-1 mt-2">
+                            <small class="text-muted" t-esc="getNestedSelectionLabel(combo, child) + ':'"/>
+                            <span class="badge bg-light text-dark border"
+                                t-esc="getNestedSelectionSummary(combo, child)"/>
+                        </span>
                     </button>
                     <button t-if="combo.tha_max_selection &gt; 1 &amp;&amp; isSelected(combo.id, child.id, true)"
                         type="button" class="btn btn-link btn-sm"
