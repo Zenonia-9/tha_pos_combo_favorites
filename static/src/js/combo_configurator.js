@@ -40,14 +40,18 @@ patch(ComboConfiguratorPopup.prototype, {
         });
     },
     getChildren(combo) {
+        const availability = this.props.product.tha_combo_availability?.[combo.id];
         return (combo.tha_child_combo_ids || [])
+            .filter((id) => !availability || availability.child_combo_ids.includes(id))
             .map((id) => this.pos.db.combo_by_id[id])
             .filter(Boolean);
     },
     getAvailableComboLines(combo) {
+        const availability = this.props.product.tha_combo_availability?.[combo.id];
         return (combo.combo_line_ids || [])
             .map((id) => this.pos.db.combo_line_by_id[id])
-            .filter((line) => line && this.pos.db.product_by_id[line.product_id[0]]?.active);
+            .filter((line) => line && this.pos.db.product_by_id[line.product_id[0]]?.active
+                && (!availability || availability.product_ids.includes(line.product_id[0])));
     },
     isSelected(comboId, value, isChild = false) {
         const selected = isChild ? this.state.childCombos : this.state.combo;
@@ -100,7 +104,11 @@ patch(ComboConfiguratorPopup.prototype, {
     async onClickNestedCombo(combo, child) {
         const wasSelected = this.isSelected(combo.id, child.id, true);
         const { confirmed, payload } = await this.popup.add(ComboConfiguratorPopup, {
-            product: { display_name: child.name, combo_ids: [child.id] },
+            product: {
+                display_name: child.name,
+                combo_ids: [child.id],
+                tha_combo_availability: this.props.product.tha_combo_availability,
+            },
         });
         if (!confirmed) {
             return;

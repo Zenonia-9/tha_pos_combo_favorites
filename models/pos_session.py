@@ -27,4 +27,6 @@ class PosSession(models.Model):
         product_fields = params["search_params"]["fields"]
         if "tha_is_favorite" not in product_fields:
             product_fields.append("tha_is_favorite")
+        if "tha_combo_availability" not in product_fields:
+            product_fields.append("tha_combo_availability")
         return params

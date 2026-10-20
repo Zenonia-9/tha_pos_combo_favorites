@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="pos_combo_availability_company_rule" model="ir.rule">
+        <field name="name">Combo availability companies</field>
+        <field name="model_id" ref="model_pos_combo_availability"/>
+        <field name="domain_force">['|', ('product_tmpl_id.company_id', '=', False), ('product_tmpl_id.company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="product_template_combo_availability_form" model="ir.ui.view">
+        <field name="name">product.template.combo.availability</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="point_of_sale.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='combos']/field[@name='combo_ids']" position="replace">
+                <field name="combo_ids" invisible="1"/>
+                <p class="text-muted">Add a Combo Choice, then remove products or sub choices unavailable for this set. Save to load nested choice rows. Blank means all options of that type.</p>
+                <field name="tha_combo_availability_ids" nolabel="1">
+                    <tree editable="bottom">
+                        <field name="is_root" column_invisible="True"/>
+                        <field name="combo_id" readonly="not is_root" options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+                        <field name="source_product_ids" column_invisible="True"/>
+                        <field name="source_child_combo_ids" column_invisible="True"/>
+                        <field name="product_ids" widget="many2many_tags"
+                            domain="[('id', 'in', source_product_ids)]"
+                            options="{'no_create': True, 'no_create_edit': True}"/>
+                        <field name="child_combo_ids" widget="many2many_tags"
+                            domain="[('id', 'in', source_child_combo_ids)]"
+                            options="{'no_create': True, 'no_create_edit': True}"/>
+                    </tree>
+                </field>
+            </xpath>
+        </field>
+    </record>
+    <record id="pos_combo_availability_tree" model="ir.ui.view">
+        <field name="name">pos.combo.availability.tree</field>
+        <field name="model">pos.combo.availability</field>
+        <field name="arch" type="xml">
+            <tree string="Combo Set Availability" delete="false">
+                <header>
+                    <button name="action_download_template" type="object" string="Excel Template" display="always"/>
+                </header>
+                <field name="product_tmpl_id"/>
+                <field name="combo_id"/>
+                <field name="product_ids" widget="many2many_tags"/>
+                <field name="child_combo_ids" widget="many2many_tags"/>
+            </tree>
+        </field>
+    </record>
+    <record id="pos_combo_availability_form" model="ir.ui.view">
+        <field name="name">pos.combo.availability.form</field>
+        <field name="model">pos.combo.availability</field>
+        <field name="arch" type="xml">
+            <form string="Combo Set Availability" delete="false">
+                <sheet>
+                    <group>
+                        <field name="product_tmpl_id" domain="[('detailed_type', '=', 'combo')]"
+                            options="{'no_create': True}"/>
+                        <field name="combo_id" options="{'no_create': True}"/>
+                        <field name="source_product_ids" invisible="1"/>
+                        <field name="source_child_combo_ids" invisible="1"/>
+                        <field name="product_ids" widget="many2many_tags" domain="[('id', 'in', source_product_ids)]"
+                            options="{'no_create': True, 'no_create_edit': True}"/>
+                        <field name="child_combo_ids" widget="many2many_tags" domain="[('id', 'in', source_child_combo_ids)]"
+                            options="{'no_create': True, 'no_create_edit': True}"/>
+                    </group>
+                    <p class="text-muted">Blank Products or Sub Choices means all options of that type. Use Actions → Import records in the list to import Excel files. Matching product and combo pairs update the existing availability.</p>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_pos_combo_availability" model="ir.actions.act_window">
+        <field name="name">Combo Set Availability</field>
+        <field name="res_model">pos.combo.availability</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+    <menuitem id="menu_pos_combo_availability" name="Combo Set Availability"
+        parent="point_of_sale.pos_config_menu_catalog" action="action_pos_combo_availability"
+        groups="point_of_sale.group_pos_manager" sequence="16"/>
+</odoo>

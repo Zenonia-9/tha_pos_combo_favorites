@@ -5,6 +5,29 @@ from odoo.exceptions import ValidationError
 class PosCombo(models.Model):
     _inherit = "pos.combo"
 
+    def write(self, values):
+        result = super().write(values)
+        if "combo_line_ids" in values or "tha_child_combo_ids" in values:
+            records = self.env["pos.combo.availability"].search([("combo_id", "in", self.ids)])
+            for record in records:
+                products = record.product_ids & record.combo_id.combo_line_ids.product_id
+                children = record.child_combo_ids & record.combo_id.tha_child_combo_ids
+                if products != record.product_ids or children != record.child_combo_ids:
+                    record.with_context(tha_skip_combo_sync=True).write({
+                        "product_ids": [fields.Command.set(products.ids)],
+                        "child_combo_ids": [fields.Command.set(children.ids)],
+                    })
+            records.product_tmpl_id.tha_sync_combo_availability()
+        return result
+
+    def unlink(self):
+        products = self.env["product.template"].with_context(active_test=False).search([
+            "|", ("combo_ids", "in", self.ids), ("tha_combo_availability_ids.combo_id", "in", self.ids),
+        ])
+        result = super().unlink()
+        products.tha_sync_combo_availability()
+        return result
+
     tha_parent_combo_id = fields.Many2one(
         "pos.combo", string="Legacy Parent Choice", ondelete="set null", index=True
     )
