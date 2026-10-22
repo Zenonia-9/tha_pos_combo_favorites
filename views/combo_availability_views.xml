@@ -35,9 +35,6 @@
         <field name="model">pos.combo.availability</field>
         <field name="arch" type="xml">
             <tree string="Combo Set Availability" delete="false">
-                <header>
-                    <button name="action_download_template" type="object" string="Excel Template" display="always"/>
-                </header>
                 <field name="product_tmpl_id"/>
                 <field name="combo_id"/>
                 <field name="product_ids" widget="many2many_tags"/>
@@ -62,7 +59,7 @@
                         <field name="child_combo_ids" widget="many2many_tags" domain="[('id', 'in', source_child_combo_ids)]"
                             options="{'no_create': True, 'no_create_edit': True}"/>
                     </group>
-                    <p class="text-muted">Blank Products or Sub Choices means all options of that type. Use Actions → Import records in the list to import Excel files. Matching product and combo pairs update the existing availability.</p>
+                    <p class="text-muted">Blank Products or Sub Choices means all options of that type. Use the standard Products Export and Import actions with the Combo Choices fields. Matching product and combo pairs update the existing availability.</p>
                 </sheet>
             </form>
         </field>

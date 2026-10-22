@@ -5,7 +5,7 @@ class ProductTemplate(models.Model):
     _inherit = "product.template"
 
     tha_combo_availability_ids = fields.One2many(
-        "pos.combo.availability", "product_tmpl_id", string="Availability for This Set", copy=True,
+        "pos.combo.availability", "product_tmpl_id", string="Combo Choices", copy=True,
     )
     tha_combo_availability = fields.Json(compute="tha_compute_combo_availability")
 
@@ -65,6 +65,21 @@ class ProductTemplate(models.Model):
         for product in self:
             product.combo_ids = product.tha_combo_availability_ids.filtered("is_root").combo_id
 
+    def tha_import_combo_roots(self, values, previous_roots=None):
+        self.ensure_one()
+        roots = self.env["pos.combo"] if previous_roots is None else previous_roots
+        candidates = roots | self.tha_combo_availability_ids.combo_id
+        nested = self.env["pos.combo"]
+        for combo in candidates:
+            nested |= self.tha_get_combo_tree(combo) - combo
+        roots |= candidates - nested
+        for command in values.get("tha_combo_availability_ids", []):
+            if command[0] in (Command.CREATE, Command.UPDATE) and command[2].get("is_root"):
+                combo_id = command[2].get("combo_id")
+                if combo_id:
+                    roots |= self.env["pos.combo"].browse(combo_id)
+        self.with_context(tha_skip_combo_sync=True).write({"combo_ids": [Command.set(roots.ids)]})
+
     @api.model_create_multi
     def create(self, values_list):
         if self.env.context.get("tha_skip_combo_sync"):
@@ -72,19 +87,28 @@ class ProductTemplate(models.Model):
         products = super(ProductTemplate, self.with_context(tha_skip_combo_sync=True)).create(values_list)
         for product, values in zip(products, values_list):
             if "tha_combo_availability_ids" in values and "combo_ids" not in values:
-                product.write({"combo_ids": [Command.set(product.tha_combo_availability_ids.filtered("is_root").combo_id.ids)]})
+                if self.env.context.get("import_file"):
+                    product.tha_import_combo_roots(values)
+                else:
+                    product.write({"combo_ids": [Command.set(product.tha_combo_availability_ids.filtered("is_root").combo_id.ids)]})
         products.filtered("combo_ids").tha_sync_combo_availability()
         return products.with_env(self.env)
 
     def write(self, values):
         if self.env.context.get("tha_skip_combo_sync"):
             return super().write(values)
+        previous_roots = {
+            product.id: product.combo_ids for product in self
+        } if self.env.context.get("import_file") and "tha_combo_availability_ids" in values else {}
         result = super(ProductTemplate, self.with_context(tha_skip_combo_sync=True)).write(values)
         if "tha_combo_availability_ids" in values and "combo_ids" not in values:
             for product in self:
-                product.with_context(tha_skip_combo_sync=True).write({
-                    "combo_ids": [Command.set(product.tha_combo_availability_ids.filtered("is_root").combo_id.ids)],
-                })
+                if self.env.context.get("import_file"):
+                    product.tha_import_combo_roots(values, previous_roots[product.id])
+                else:
+                    product.with_context(tha_skip_combo_sync=True).write({
+                        "combo_ids": [Command.set(product.tha_combo_availability_ids.filtered("is_root").combo_id.ids)],
+                    })
         if "combo_ids" in values or "tha_combo_availability_ids" in values:
             self.tha_sync_combo_availability()
         return result

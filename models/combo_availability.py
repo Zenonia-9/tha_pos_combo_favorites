@@ -65,13 +65,6 @@ class PosComboAvailability(models.Model):
             if values:
                 super(PosComboAvailability, record).write(values)
 
-    def action_download_template(self):
-        return {
-            "type": "ir.actions.act_url",
-            "url": "/tha_pos_combo_favorites/static/templates/combo_set_availability.xlsx",
-            "target": "self",
-        }
-
     def _attach_to_products(self):
         for product in self.product_tmpl_id:
             tree = product.tha_get_combo_tree()
@@ -113,17 +106,12 @@ class PosComboAvailability(models.Model):
         return records
 
     def write(self, values):
-        if self.env.context.get("import_file"):
-            for record in self:
-                imported_values = dict(values)
-                combo = self.env["pos.combo"].browse(values.get("combo_id", record.combo_id.id))
-                imported_values.setdefault("product_ids", [Command.set(combo.combo_line_ids.product_id.ids)])
-                imported_values.setdefault("child_combo_ids", [Command.set(combo.tha_child_combo_ids.ids)])
-                super(PosComboAvailability, record).write(imported_values)
-        else:
-            result = super().write(values)
-            if not result:
-                return result
+        if self.env.context.get("import_file") and "product_tmpl_id" in values:
+            if any(record.product_tmpl_id.id != values["product_tmpl_id"] for record in self):
+                raise ValidationError(_("An exported combo availability row cannot be moved to another product. Remove its row ID to create a new assignment."))
+        result = super().write(values)
+        if not result:
+            return result
         self._fill_blank_options()
         if not self.env.context.get("tha_skip_combo_sync"):
             self._attach_to_products()

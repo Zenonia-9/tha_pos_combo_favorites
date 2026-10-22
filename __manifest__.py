@@ -1,6 +1,6 @@
 {
     "name": "POS Combo Sets and Favorites",
-    "version": "17.0.1.0.14",
+    "version": "17.0.1.0.15",
     "category": "Point of Sale",
     "summary": "Nested POS combos, availability for each set, and Favorites",
     "description": "Configure nested POS combo choices, customize available options for each combo set, and filter POS products by the Favorite flag.",

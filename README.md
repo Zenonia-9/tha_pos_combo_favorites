@@ -38,21 +38,48 @@ Saved non-empty lists are explicit selections. When a shared Combo Choice later 
 
 Upgrade 17.0.1.0.14 preserves existing main assignments and creates availability rows for their complete choice trees, initially allowing all existing options. Existing order lines retain their original combo item references. Reload POS after changing availability.
 
-## Excel import
+## Standard product export and import
 
-Open **Point of Sale → Products → Combo Set Availability**. Click **Excel Template** to download `static/templates/combo_set_availability.xlsx`. Fill its **Import** sheet, then use the list's **Import records** action. The **Examples and Guide** sheet is explanatory and should not be imported.
+Use **Point of Sale → Products → Products** in list view. Select the combo set products, choose Odoo's normal **Export** action, and enable **I want to update data (import-compatible export)**. Select:
 
-Use one row per combo set product and Combo Choice:
+- **External ID** and **Name**.
+- **Combo Choices / Combo Choice**.
+- **Combo Choices / Products**.
+- **Combo Choices / Sub Choices**.
 
-| Combo Set Product | Combo Choice | Products | Sub Choices |
-| --- | --- | --- | --- |
-| Set A | Meal | Chicken,Fish Cake,Pork | |
-| Set B | Meal | Chicken,Pork | |
-| Set B | Drinks | | Soft Drinks,Juice |
-| Set B | Soft Drinks | Coke | |
+Export XLSX or CSV, edit it, then use the Products list's normal **Import records** action. Keep the product External IDs when updating existing products; importing only a product name follows Odoo's normal new-product behavior. When creating new combo set products, also map **Product Type** (`detailed_type`) to **Combo**. The technical relation remains `tha_combo_availability_ids`; its export label is now **Combo Choices**.
 
-- Separate multiple options in one cell with commas. Every option must already exist in the selected shared Combo Choice. Products are product variants; Combo Set Product identifies the product template.
-- Both blank option cells mean all products and all sub choices. A blank cell also resets an existing restricted list to all its source options during an update.
-- An imported existing product/combo pair updates in place, so an availability row External ID is optional. Include all main-choice rows before nested override rows when assigning combos to a new set. Importing a choice outside the set's current tree adds it as a main choice.
-- Names must identify existing records uniquely. For duplicate names or names containing commas, export and import **External ID** or **Database ID** fields instead. Examples: `product_tmpl_id/id`, `combo_id/id`, `product_ids/id`, `child_combo_ids/id` for external IDs; replace `/id` with `/.id` for numeric database IDs. Multiple IDs in Products or Sub Choices remain comma-separated.
-- POS managers can edit/import availability. POS users can read the resulting rules. Availability follows the combo set product's company access.
+Comma-separated options and one-option-per-row layouts are supported:
+
+| External ID | Name | Combo Choices / Combo Choice | Combo Choices / Products | Combo Choices / Sub Choices |
+| --- | --- | --- | --- | --- |
+| set_a | Set A | Meal | Chicken | |
+| | | | Pork | |
+| | | Drinks | | Soft Drinks,Juice |
+| | | Soft Drinks | Coke | |
+| set_b | Set B | Meal | Chicken,Pork | |
+
+The first two rows form one Meal choice containing Chicken and Pork. Blank product fields continue the same product. A blank Combo Choice with option values continues the preceding choice within that product. Start each product with its own Combo Choice; continuation never carries a choice across products. Products and Sub Choices can each span continuation rows. Spaces around comma-separated options are ignored.
+
+After continuation rows have been combined, a blank **Products** cell means all direct products, and a blank **Sub Choices** cell means all child choices. This also resets existing restrictions when updating. An option column that is not imported preserves its existing value. Existing choices omitted from the file remain assigned to the set.
+
+Products are matched within the selected Combo Choice's direct products; Sub Choices are matched within its configured children. Duplicate names elsewhere do not affect matching. Missing options, duplicate names within that choice, and ambiguous Combo Choice names stop the import with a clear error. Shared choices and options must already exist; imports select them rather than creating new definitions. Exported product labels containing internal references, such as `[RM-0011] 7-up`, are supported.
+
+Nested choice rows are inferred from the shared hierarchy even when they appear before their parent in the file. Importing both Drinks and Soft Drinks configures Soft Drinks as a nested choice when it belongs under Drinks. Existing main choices remain assigned. Exported **Main Choice** flags can preserve deliberately overlapping main assignments.
+
+Use **External ID** or **Database ID** relation subfields when names are ambiguous or contain commas. Technical examples are `tha_combo_availability_ids/combo_id/id`, `tha_combo_availability_ids/product_ids/id`, and `tha_combo_availability_ids/child_combo_ids/id`; replace `/id` with `/.id` for database IDs. The availability row's own `tha_combo_availability_ids/id` is optional: imports also update existing rows by product/choice pair. A referenced availability row cannot be moved to another product; remove its row ID when creating a different product.
+
+For native many-to-many exports, use the Products and Sub Choices name columns or their External ID subfields. Odoo 17 exports display names for many-to-many Database ID columns; numeric Database IDs remain supported when supplied during import.
+
+The **Combo Set Availability** screen remains available as an overview and uses normal Odoo export/import actions too. POS managers can edit/import availability; POS users can read rules under the set product's company access. The converter cooperates with `tha_product_attribute_import` when that addon is installed, without requiring it as a dependency.
+
+## Validation
+
+The regression suite covers native product `load()`, scoped names and IDs, continuation rows, omitted choices, blank defaults, nested inference, availability ownership, native export round trips, and the actual Odoo XLSX export/import pipeline. Compatibility with `tha_product_attribute_import` is checked when installed. Test records are rolled back.
+
+```powershell
+docker compose stop gateway_17 odoo_17
+docker compose run --rm --no-deps odoo_17 odoo -c /run/odoo/odoo.conf -d THA17 -u tha_pos_combo_favorites --stop-after-init --no-http --workers=0 --max-cron-threads=0 --test-enable --test-tags /tha_pos_combo_favorites
+docker compose up -d --wait
+docker compose restart odoo_17
+```
