@@ -20,9 +20,8 @@ patch(PosStore.prototype, {
             .map((id) => this.db.combo_line_by_id[id]?.product_id?.[0])
             .filter((id) => id && !this.db.get_product_by_id(id)))];
         if (productIds.length) {
-            const products = await this._loadProductByIds(productIds);
-            await this._loadMissingPricelistItems(products);
-            this._loadProductProduct(products);
+            // Keep compatibility with this Odoo 17 product-loading API.
+            await this._addProducts(productIds, false);
         }
     },
 });
